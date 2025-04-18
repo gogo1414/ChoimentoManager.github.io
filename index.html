@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>키워드 통계 관리자 대시보드</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Noto Sans KR", sans-serif;
+        background-color: #f4f6f9;
+        margin: 0;
+        padding: 0;
+        color: #333;
+      }
+
+      header {
+        background-color: #2f3542;
+        color: #fff;
+        padding: 20px 40px;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 22px;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 0 20px;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.08);
+        padding-bottom: 40px;
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        padding: 20px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .controls label {
+        font-weight: 500;
+      }
+
+      .controls select,
+      .controls input[type="date"],
+      .controls button {
+        padding: 6px 10px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+      }
+
+      .controls button {
+        background-color: #2ed573;
+        color: white;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      .controls button:hover {
+        background-color: #1dd1a1;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 24px 0;
+      }
+
+      table thead {
+        background-color: #f1f2f6;
+      }
+
+      th,
+      td {
+        text-align: center;
+        padding: 12px 10px;
+        border-bottom: 1px solid #eee;
+        font-size: 14px;
+      }
+
+      th {
+        font-weight: 600;
+        color: #555;
+      }
+
+      tbody tr:nth-child(even) {
+        background-color: #fafafa;
+      }
+
+      #chart-container {
+        margin: 40px auto 0;
+        max-width: 800px;
+      }
+
+      @media screen and (max-width: 768px) {
+        .controls {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        table,
+        thead,
+        tbody,
+        th,
+        td,
+        tr {
+          font-size: 13px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>🔍 키워드 검색 통계 대시보드</h1>
+    </header>
+
+    <div class="container">
+      <div class="controls">
+        <label>
+          기준일:
+          <select id="rangeSelect">
+            <option value="1">1일</option>
+            <option value="3">3일</option>
+            <option value="7" selected>7일</option>
+            <option value="30">30일</option>
+            <option value="all">전체</option>
+          </select>
+        </label>
+
+        <label>
+          종료일:
+          <input type="date" id="endDate" value="2025-04-18" />
+        </label>
+
+        <button onclick="loadData()">조회</button>
+      </div>
+
+      <table id="keywordTable">
+        <thead>
+          <tr>
+            <th>순위</th>
+            <th>키워드</th>
+            <th>검색 횟수</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div id="chart-container">
+        <canvas id="keywordChart"></canvas>
+      </div>
+    </div>
+
+    <script>
+      const dummyData = [
+        { keyword: "멘토", count: 134 },
+        { keyword: "AI", count: 97 },
+        { keyword: "인공지능", count: 80 },
+        { keyword: "지원", count: 75 },
+        { keyword: "프로젝트", count: 62 },
+        { keyword: "산학", count: 58 },
+        { keyword: "인턴", count: 55 },
+        { keyword: "컨설팅", count: 51 },
+        { keyword: "전문가", count: 50 },
+        { keyword: "R&D", count: 48 },
+      ];
+
+      function loadData() {
+        const range = document.getElementById("rangeSelect").value;
+        const endDate = document.getElementById("endDate").value;
+
+        // "전체" 선택 시 필터 없이 전체 데이터 사용
+        let filtered = dummyData;
+
+        // 예: 실제 필터링 적용 (이건 나중에 서버 쿼리로 처리)
+        if (range !== "all") {
+          console.log(`조회 기간: ${range}일, 종료일: ${endDate}`);
+          // 이곳에서 실제 필터링 API 호출하거나, 필터 조건 처리 가능
+        }
+
+        const tbody = document.querySelector("#keywordTable tbody");
+        tbody.innerHTML = "";
+
+        filtered.forEach((item, index) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `<td>${index + 1}</td><td>${item.keyword}</td><td>${
+            item.count
+          }</td>`;
+          tbody.appendChild(row);
+        });
+
+        drawChart(filtered);
+      }
+
+      function drawChart(data) {
+        const ctx = document.getElementById("keywordChart").getContext("2d");
+        if (window.keywordChart) {
+          window.keywordChart.destroy();
+        }
+
+        window.keywordChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: data.map((d) => d.keyword),
+            datasets: [
+              {
+                label: "검색 횟수",
+                data: data.map((d) => d.count),
+                backgroundColor: "#70a1ff",
+                borderRadius: 5,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  precision: 0,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      document
+        .getElementById("rangeSelect")
+        .addEventListener("change", function () {
+          const endDateInput = document.getElementById("endDate");
+          if (this.value === "all") {
+            endDateInput.disabled = true;
+          } else {
+            endDateInput.disabled = false;
+          }
+        });
+
+      window.onload = loadData;
+    </script>
+  </body>
+</html>
